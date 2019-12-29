@@ -1,0 +1,289 @@
+--*******************************************************************************************
+--this MUST be run in conjunction with the 9998-"No Analysis" query - this will give the viewer an
+--understanding of the amount of unallocated costs that have been allocated by this query
+--This query has been recently updated* you will need to run 9998 because the cap costs have
+--not been allocated
+--*******************************************************************************************
+use [ProductPortfolioReview];
+DECLARE @startdate NVARCHAR(50), @enddate NVARCHAR(50), @mnths NVARCHAR(2)
+SET @startdate = '2017-06-30'
+SET @enddate = '2018-05-31'
+SET @mnths = DATEDIFF(mm,@startdate,@enddate) + 1
+select
+mpf.product_id,
+mpf.system_name,
+reportdate = @mnths + ' months ended: ' + @enddate,
+sum(cloud_revenue) as cloud_revenue,
+sum(maintenance_revenue) as maintenance_revenue,
+sum(other_revenue) as software_revenue,
+sum(services_revenue) as services_revenue,
+sum(subscription_revenue) as subscription_revenue,
+max(rv_finance_allocations) as rv_finance_allocation,
+sum(dc_agencyfees) as dc_agencyfees,
+sum(dc_other) as dc_other,
+sum(dc_sellingcost) as dc_sellingcost,
+sum(dc_thirdpartyroyalties) as dc_thirdpartyroyalties,
+max(dc_finance_allocations) as dc_finance_allocation,
+sum(rd_peoplecosts) as rd_peoplecosts,
+sum(rd_contractorcosts) as rd_contractorcosts,
+sum(rd_allocations) as rd_allocations,
+sum(rd_othercosts) as rd_othercosts,
+--max(rd_finance_allocations) as rd_finance_allocation,
+sum(cs_peoplecosts) as cs_peoplecosts,
+sum(cs_contractorcosts) as cs_contractorcosts,
+sum(cs_allocations) as cs_allocations,
+sum(cs_othercosts) as cs_othercosts,
+max(cs_finance_allocations) as cs_finance_allocation,
+sum(ps_peoplecosts) as ps_peoplecosts,
+sum(ps_contractorcosts) as ps_contractorcosts,
+sum(ps_allocations) as ps_allocations,
+sum(ps_othercosts) as ps_othercosts,
+--max(ps_finance_allocations) as ps_finance_allocation,
+sum(cd_peoplecosts) as cd_peoplecosts,
+sum(cd_contractorcosts) as cd_contractorcosts,
+sum(cd_allocations) as cd_allocations,
+sum(cd_othercosts) as cd_othercosts,
+max(cd_finance_allocations) as cd_finance_allocation,
+sum(sm_peoplecosts) as sm_peoplecosts,
+sum(sm_contractorcosts) as sm_contractorcosts,
+sum(sm_allocations) as sm_allocations,
+sum(sm_othercosts) as sm_othercosts,
+--max(sm_finance_allocations) as sm_finance_allocation,
+sum(ga_peoplecosts) as ga_peoplecosts,
+sum(ga_contractorcosts) as ga_contractorcosts,
+sum(ga_allocations) as ga_allocations,
+sum(ga_othercosts) as ga_othercosts,
+--max(ga_finance_wage_allocation) as ga_finance_wage_allocation,
+--max(ga_finance_contractor_allocation) as ga_finance_contractor_allocation,
+--max(ga_finance_allocations_allocation) as ga_finance_allocations_allocation,
+--max(ga_finance_other_allocation) as ga_finance_other_allocation,
+--sum(capitalization_positive) as cap_sw_pos,
+--sum(capitalization_negative) as cap_sw_neg
+from (
+((((((([dbo].[monthly_product_financials] AS mpf LEFT JOIN
+	(Select 
+	system_name,
+	sum(cd_allocated_costs) as cd_finance_allocations
+	FROM
+	(SELECT 
+	Table1.system_name AS system_name,
+	Table1.reportdate AS reportdate,
+	(cd_unallocated_costs * prcnt_total) as cd_allocated_costs
+	FROM
+	(SELECT 
+	system_name,
+	reportdate,
+	((cloud_revenue)/(NULLIF(SUM((cloud_revenue)) OVER (PARTITION BY reportdate),0.00) * 1.00)) as prcnt_total
+	FROM [dbo].[monthly_product_financials]
+	WHERE system_name != 'No Analysis') AS Table1 LEFT JOIN
+	(SELECT
+	reportdate,
+	SUM(cd_peoplecosts + cd_contractorcosts + cd_allocations + cd_othercosts) AS cd_unallocated_costs
+	FROM [dbo].[monthly_product_financials]
+	WHERE system_name IN
+	(
+	'No Analysis'
+	)
+	GROUP BY reportdate) AS Table2 ON Table1.reportdate = Table2.reportdate) AS data_table
+	WHERE reportdate BETWEEN @startdate AND @enddate
+	GROUP BY system_name) as temptable ON mpf.system_name = temptable.system_name) LEFT JOIN
+		(Select 
+		system_name,
+		sum(cs_allocated_costs) as cs_finance_allocations
+		FROM
+		(SELECT 
+		csTable1.system_name AS system_name,
+		csTable1.reportdate AS reportdate,
+		(cs_unallocated_costs * prcnt_total) as cs_allocated_costs
+		FROM
+		(SELECT 
+		system_name,
+		reportdate,
+		((cs_peoplecosts + cs_contractorcosts)/(NULLIF(SUM((cs_peoplecosts + cs_contractorcosts)) OVER (PARTITION BY reportdate),0.00) * 1.00)) as prcnt_total
+		FROM [dbo].[monthly_product_financials]
+		WHERE system_name != 'No Analysis') AS csTable1 LEFT JOIN
+		(SELECT
+		reportdate,
+		SUM(cs_peoplecosts + cs_contractorcosts + cs_allocations + cs_othercosts) AS cs_unallocated_costs
+		FROM [dbo].[monthly_product_financials]
+		WHERE system_name IN
+		(
+		'No Analysis'
+		)
+		GROUP BY reportdate) AS csTable2 ON csTable1.reportdate = csTable2.reportdate) AS csdata_table
+		WHERE reportdate BETWEEN @startdate AND @enddate
+		GROUP BY system_name) as cstemptable ON mpf.system_name = cstemptable.system_name) LEFT JOIN
+			(Select 
+			system_name,
+			sum(rv_allocated_costs) as rv_finance_allocations
+			FROM
+			(SELECT 
+			rvTable1.system_name AS system_name,
+			rvTable1.reportdate AS reportdate,
+			(rv_unallocated_costs * prcnt_total) as rv_allocated_costs
+			FROM
+			(SELECT 
+			system_name,
+			reportdate,
+			((total_revenue)/(NULLIF(SUM((total_revenue)) OVER (PARTITION BY reportdate),0.00) * 1.00)) as prcnt_total
+			FROM [dbo].[monthly_product_financials]
+			WHERE system_name != 'No Analysis') AS rvTable1 LEFT JOIN
+			(SELECT
+			reportdate,
+			SUM(total_revenue) AS rv_unallocated_costs
+			FROM [dbo].[monthly_product_financials]
+			WHERE system_name IN
+			(
+			'No Analysis'
+			)
+			GROUP BY reportdate) AS rvTable2 ON rvTable1.reportdate = rvTable2.reportdate) AS rvdata_table
+			WHERE reportdate BETWEEN @startdate AND @enddate
+			GROUP BY system_name) as rvtemptable ON mpf.system_name = rvtemptable.system_name) LEFT JOIN
+				(Select 
+				system_name,
+				sum(dc_allocated_costs) as dc_finance_allocations
+				FROM
+				(SELECT 
+				dcTable1.system_name AS system_name,
+				dcTable1.reportdate AS reportdate,
+				(dc_unallocated_costs * prcnt_total) as dc_allocated_costs
+				FROM
+				(SELECT 
+				system_name,
+				reportdate,
+				((dc_total)/(NULLIF(SUM((dc_total)) OVER (PARTITION BY reportdate),0.00) * 1.00)) as prcnt_total
+				FROM [dbo].[monthly_product_financials]
+				WHERE system_name != 'No Analysis') AS dcTable1 LEFT JOIN
+				(SELECT
+				reportdate,
+				SUM(dc_total) AS dc_unallocated_costs
+				FROM [dbo].[monthly_product_financials]
+				WHERE system_name IN
+				(
+				'No Analysis'
+				)
+				GROUP BY reportdate) AS dcTable2 ON dcTable1.reportdate = dcTable2.reportdate) AS dcdata_table
+				WHERE reportdate BETWEEN @startdate AND @enddate
+				GROUP BY system_name) as dctemptable ON mpf.system_name = dctemptable.system_name) LEFT JOIN
+					(SELECT
+					system_name,
+					SUM(ga_wage_allocation) AS ga_finance_wage_allocation,
+					SUM(ga_contractor_allocation) AS ga_finance_contractor_allocation,
+					SUM(ga_allocations_allocation) AS ga_finance_allocations_allocation,
+					SUM(ga_other_allocation) AS ga_finance_other_allocation
+					FROM
+					(SELECT 
+					table1.system_name AS system_name,
+					'ga_finance_allocation' AS description,
+					table1.reportdate AS reportdate, 
+					(ga_unallocated_peoplecosts * percentWAGEtotal) AS ga_wage_allocation,
+					(ga_unallocated_contractorcosts * percentCONTRACTORtotal) AS ga_contractor_allocation,
+					(ga_unallocated_allocations * percentALLOCATIONStotal) AS ga_allocations_allocation,
+					(ga_unallocated_othercosts * percentOTHERtotal) AS ga_other_allocation
+					FROM
+					(SELECT
+					reportdate,
+					SUM(ga_peoplecosts) as ga_unallocated_peoplecosts,
+					SUM(ga_contractorcosts) as ga_unallocated_contractorcosts,
+					SUM(ga_allocations) as ga_unallocated_allocations,
+					SUM(ga_othercosts) AS ga_unallocated_othercosts
+					FROM [dbo].[monthly_product_financials]
+					WHERE system_name IN
+					(
+					'No Analysis'
+					)
+					GROUP BY reportdate) AS table2 RIGHT JOIN 
+					(select 
+					reportdate, 
+					system_name,
+					((cd_peoplecosts + rd_peoplecosts + sm_peoplecosts + cs_peoplecosts + ps_peoplecosts) / (NULLIF(SUM(cd_peoplecosts + rd_peoplecosts + sm_peoplecosts + cs_peoplecosts + ps_peoplecosts) OVER (PARTITION BY reportdate),0.00) * 1.00)) as percentWAGEtotal,
+					((cd_contractorcosts + rd_contractorcosts + sm_contractorcosts + cs_contractorcosts + ps_contractorcosts) / (NULLIF(SUM(cd_contractorcosts + rd_contractorcosts + sm_contractorcosts + cs_contractorcosts + ps_contractorcosts) OVER (PARTITION BY reportdate),0.00) * 1.00)) as percentCONTRACTORtotal,
+					((cd_allocations + rd_allocations + sm_allocations + cs_allocations + ps_allocations) / (NULLIF(SUM(cd_allocations + rd_allocations + sm_allocations + cs_allocations + ps_allocations) OVER (PARTITION BY reportdate),0.00) * 1.00)) as percentALLOCATIONStotal,
+					((cd_othercosts + rd_othercosts + sm_othercosts + cs_othercosts + ps_othercosts) / (NULLIF(SUM(cd_othercosts + rd_othercosts + sm_othercosts + cs_othercosts + ps_othercosts) OVER (PARTITION BY reportdate),0.00) * 1.00)) as percentOTHERtotal
+					from [dbo].[monthly_product_financials]
+					where system_name != 'No Analysis') as table1
+					ON table1.reportdate = table2.reportdate) AS up
+					WHERE reportdate BETWEEN @startdate AND @enddate
+					GROUP BY system_name) as gta ON mpf.system_name = gta.system_name) LEFT JOIN
+						(Select 
+						system_name,
+						sum(rd_allocated_costs) as rd_finance_allocations
+						FROM
+						(SELECT 
+						rdTable1.system_name AS system_name,
+						rdTable1.reportdate AS reportdate,
+						(rd_unallocated_costs * prcnt_total) as rd_allocated_costs
+						FROM
+						(SELECT 
+						system_name,
+						reportdate,
+						((rd_peoplecosts + rd_contractorcosts + rd_allocations + rd_othercosts)/(NULLIF(SUM((rd_peoplecosts + rd_contractorcosts + rd_allocations + rd_othercosts)) OVER (PARTITION BY reportdate),0.00) * 1.00)) as prcnt_total
+						FROM [dbo].[monthly_product_financials]
+						WHERE system_name != 'No Analysis') AS rdTable1 LEFT JOIN
+						(SELECT
+						reportdate,
+						SUM(rd_peoplecosts + rd_contractorcosts + rd_allocations + rd_othercosts) AS rd_unallocated_costs
+						FROM [dbo].[monthly_product_financials]
+						WHERE system_name IN
+						(
+						'No Analysis'
+						)
+						GROUP BY reportdate) AS rdTable2 ON rdTable1.reportdate = rdTable2.reportdate) AS rddata_table
+						WHERE reportdate BETWEEN @startdate AND @enddate
+						GROUP BY system_name) as rdtemptable ON mpf.system_name = rdtemptable.system_name) LEFT JOIN
+							(Select 
+							system_name,
+							sum(sm_allocated_costs) as sm_finance_allocations
+							FROM
+							(SELECT 
+							rvTable1.system_name AS system_name,
+							rvTable1.reportdate AS reportdate,
+							(sm_unallocated_costs * prcnt_total) as sm_allocated_costs
+							FROM
+							(SELECT 
+							system_name,
+							reportdate,
+							((cloud_revenue + maintenance_revenue + other_revenue + services_revenue + subscription_revenue)/(NULLIF(SUM((cloud_revenue + maintenance_revenue + other_revenue + services_revenue + subscription_revenue)) OVER (PARTITION BY reportdate),0.00) * 1.00)) as prcnt_total
+							FROM [dbo].[monthly_product_financials]
+							WHERE system_name != 'No Analysis') AS rvTable1 LEFT JOIN
+							(SELECT
+							reportdate,
+							SUM(sm_peoplecosts + sm_contractorcosts + sm_allocations + sm_othercosts) AS sm_unallocated_costs
+							FROM [dbo].[monthly_product_financials]
+							WHERE system_name IN
+							(
+							'No Analysis'
+							)
+							GROUP BY reportdate) AS smTable2 ON rvTable1.reportdate = smTable2.reportdate) AS smdata_table
+							WHERE reportdate BETWEEN @startdate AND @enddate
+							GROUP BY system_name) as smtemptable ON mpf.system_name = smtemptable.system_name) LEFT JOIN
+								(Select 
+								system_name,
+								sum(ps_allocated_costs) as ps_finance_allocations
+								FROM
+								(SELECT 
+								psTable1.system_name AS system_name,
+								psTable1.reportdate AS reportdate,
+								(ps_unallocated_costs * prcnt_total) as ps_allocated_costs
+								FROM
+								(SELECT 
+								system_name,
+								reportdate,
+								((ps_peoplecosts + ps_contractorcosts + ps_allocations + ps_othercosts)/(NULLIF(SUM((ps_peoplecosts + ps_contractorcosts + ps_allocations + ps_othercosts)) OVER (PARTITION BY reportdate),0.00) * 1.00)) as prcnt_total
+								FROM [dbo].[monthly_product_financials]
+								WHERE system_name != 'No Analysis') AS psTable1 LEFT JOIN
+								(SELECT
+								reportdate,
+								SUM(ps_peoplecosts + ps_contractorcosts + ps_allocations + ps_othercosts) AS ps_unallocated_costs
+								FROM [dbo].[monthly_product_financials]
+								WHERE system_name IN
+								(
+								'No Analysis'
+								)
+								GROUP BY reportdate) AS psTable2 ON psTable1.reportdate = psTable2.reportdate) AS psdata_table
+								WHERE reportdate BETWEEN @startdate AND @enddate
+								GROUP BY system_name) as pstemptable ON mpf.system_name = pstemptable.system_name
+
+)
+where (reportdate BETWEEN @startdate AND @enddate) AND mpf.system_name != 'No Analysis'
+GROUP BY mpf.system_name, product_id;

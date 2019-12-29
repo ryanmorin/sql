@@ -1,0 +1,69 @@
+--************************************************************************************************
+--this MUST be run in conjunction with the "9999-summarizing query" for the non-allocated products
+--currently the "No Analysis" query will capture the "No Analysis" category for all LOBs
+--This query is used to show the total of the "No Analysis". DO NOT ADD to query 9999 totals
+--or the total will be overstated by the "No Analysis" totals
+--************************************************************************************************
+use [ProductPortfolioReview];
+DECLARE @startdate NVARCHAR(50), @enddate NVARCHAR(50), @mnths NVARCHAR(2)
+SET @startdate = '2017-06-30'
+SET @enddate = '2018-5-31'
+SET @mnths = DATEDIFF(mm,@startdate,@enddate) + 1
+select
+product_id = 135,
+system_name = 'No Analysis',
+reportdate = @mnths + ' months ended: ' + @enddate,
+sum(cloud_revenue) as cloud_revenue,
+sum(maintenance_revenue) as maintenance_revenue,
+sum(other_revenue) as software_revenue,
+sum(services_revenue) as services_revenue,
+sum(subscription_revenue) as subscription_revenue,
+rv_finance_allocation = 0, -- placeholder for formating
+sum(dc_agencyfees) as dc_agencyfees,
+sum(dc_other) as dc_other,
+sum(dc_sellingcost) as dc_sellingcost,
+sum(dc_thirdpartyroyalties) as dc_thirdpartyroyalties,
+dc_finance_allocation = 0, -- placeholder for formating
+sum(rd_peoplecosts) as rd_peoplecosts,
+sum(rd_contractorcosts) as rd_contractorcosts,
+sum(rd_allocations) as rd_allocations,
+sum(rd_othercosts) as rd_othercosts,
+rd_finance_allocation = 0, -- placeholder for formating
+sum(cs_peoplecosts) as cs_peoplecosts,
+sum(cs_contractorcosts) as cs_contractorcosts,
+sum(cs_allocations) as cs_allocations,
+sum(cs_othercosts) as cs_othercosts,
+cs_finance_allocation = 0, -- placeholder for formating
+sum(ps_peoplecosts) as ps_peoplecosts,
+sum(ps_contractorcosts) as ps_contractorcosts,
+sum(ps_allocations) as ps_allocations,
+sum(ps_othercosts) as ps_othercosts,
+ps_finance_allocation = 0, -- placeholder for formating
+sum(cd_peoplecosts) as cd_peoplecosts,
+sum(cd_contractorcosts) as cd_contractorcosts,
+sum(cd_allocations) as cd_allocations,
+sum(cd_othercosts) as cd_othercosts,
+cd_finance_allocation = 0, -- placeholder for formating
+sum(sm_peoplecosts) as sm_peoplecosts,
+sum(sm_contractorcosts) as sm_contractorcosts,
+sum(sm_allocations) as sm_allocations,
+sum(sm_othercosts) as sm_othercosts,
+sm_finance_allocation = 0, -- placeholder for formating
+sum(ga_peoplecosts) as ga_peoplecosts,
+sum(ga_contractorcosts) as ga_contractorcosts,
+sum(ga_allocations) as ga_allocations,
+sum(ga_othercosts) as ga_othercosts,
+ga_finance_wage_allocation = 0, -- placeholder for formating
+ga_finance_contractor_allocation = 0, -- placeholder for formating
+ga_finance_allocations_allocation = 0, -- placeholder for formating
+ga_finance_other_allocation = 0, -- placeholder for formating
+sum(capitalization_positive) as cap_sw_pos,
+sum(capitalization_negative) as cap_sw_neg
+FROM [dbo].[monthly_product_financials]
+WHERE (reportdate BETWEEN @startdate AND @enddate) AND system_name IN
+(
+'No Analysis',
+'Carbon Trust',
+'Invalid',
+'All Other Products'
+);
