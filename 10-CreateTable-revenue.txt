@@ -1,0 +1,19 @@
+USE ProductPortfolioReview;
+CREATE TABLE revenue
+(
+product varchar(255) not null,
+tm1_description varchar(255) not null,
+mo1 money,
+mo2 money,
+mo3 money,
+mo4 money,
+mo5 money,
+mo6 money,
+mo7 money,
+mo8 money,
+mo9 money,
+mo10 money,
+mo11 money,
+mo12 money,
+primary key (product,tm1_description)
+);

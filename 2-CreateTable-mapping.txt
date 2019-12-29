@@ -1,0 +1,11 @@
+USE ProductPortfolioReview;
+CREATE TABLE mapping
+(
+product_id int NOT NULL,
+system_name varchar(255) NOT NULL,
+lob varchar(255),
+product_group varchar(255),
+legacy varchar(255),
+headcount_group varchar(255),
+primary key (product_id)
+);

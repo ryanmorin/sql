@@ -1,0 +1,14 @@
+CREATE VIEW sm_month AS
+SELECT product, SUM(peoplecosts) AS sm_peoplecosts, SUM(contractorcosts) AS sm_contractorcosts, SUM(allocations) AS sm_allocations, 
+                  SUM(totalcosts - royalties - peoplecosts - contractorcosts - allocations) AS sm_othercosts, SUM(employees) AS sm_numemployees, SUM(totalheadcount - employees) 
+                  AS sm_numcontractors, SUM(totalheadcount) AS sm_totalnumemployees
+FROM     (SELECT m.system_name AS product, CASE WHEN s.tm1_description = 'SC TOTAL COST OF SALES PRE-RECLASSIFICATION' THEN mo1 ELSE 0 END AS royalties, 
+                                    CASE WHEN s.tm1_description = 'SO TOTAL PEOPLE RELATED COSTS' THEN mo1 ELSE 0 END AS peoplecosts, 
+                                    CASE WHEN s.tm1_description = 'SO CONTRACTORS (INCLUDING PARTNERS)' THEN mo1 ELSE 0 END AS contractorcosts, 
+                                    CASE WHEN s.tm1_description = 'SO ALLOCATIONS' THEN mo1 ELSE 0 END AS allocations, 
+                                    CASE WHEN s.tm1_description = 'ST TOTAL COSTS PRE-DAC' THEN mo1 ELSE 0 END AS totalcosts, 
+                                    CASE WHEN s.tm1_description = 'SH Employees' THEN CAST(mo1 AS INT) ELSE 0 END AS employees, 
+                                    CASE WHEN s.tm1_description = 'SH Total Headcount' THEN CAST(mo1 AS int) ELSE 0 END AS totalheadcount
+                  FROM      dbo.sales_marketing_expenses AS s RIGHT OUTER JOIN
+                                    dbo.mapping AS m ON s.product = m.system_name) AS sm1
+GROUP BY product

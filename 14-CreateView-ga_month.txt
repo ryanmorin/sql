@@ -1,0 +1,14 @@
+CREATE VIEW ga_month AS
+SELECT product, SUM(peoplecosts) AS ga_peoplecosts, SUM(contractorcosts) AS ga_contractorcosts, SUM(allocations) AS ga_allocations, 
+                  SUM(totalcosts - royalties - peoplecosts - contractorcosts - allocations) AS ga_othercosts, SUM(employees) AS ga_numemployees, SUM(totalheadcount - employees) 
+                  AS ga_numcontractors, SUM(totalheadcount) AS ga_totalnumemployees
+FROM     (SELECT m.system_name AS product, CASE WHEN g.tm1_description = 'SC TOTAL COST OF SALES PRE-RECLASSIFICATION' THEN mo1 ELSE 0 END AS royalties, 
+                                    CASE WHEN g.tm1_description = 'SO TOTAL PEOPLE RELATED COSTS' THEN mo1 ELSE 0 END AS peoplecosts, 
+                                    CASE WHEN g.tm1_description = 'SO CONTRACTORS (INCLUDING PARTNERS)' THEN mo1 ELSE 0 END AS contractorcosts, 
+                                    CASE WHEN g.tm1_description = 'SO ALLOCATIONS' THEN mo1 ELSE 0 END AS allocations, 
+                                    CASE WHEN g.tm1_description = 'ST TOTAL COSTS PRE-DAC' THEN mo1 ELSE 0 END AS totalcosts, 
+                                    CASE WHEN g.tm1_description = 'SH Employees' THEN CAST(mo1 AS INT) ELSE 0 END AS employees, 
+                                    CASE WHEN g.tm1_description = 'SH Total Headcount' THEN CAST(mo1 AS int) ELSE 0 END AS totalheadcount
+                  FROM      dbo.gen_admin_expenses AS g RIGHT OUTER JOIN
+                                    dbo.mapping AS m ON g.product = m.system_name) AS ga1
+GROUP BY product

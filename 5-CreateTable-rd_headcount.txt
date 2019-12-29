@@ -1,0 +1,17 @@
+USE [ProductPortfolioReview]
+CREATE TABLE rd_headcount
+(
+reportdate date,
+workdayid varchar(255),
+firstname varchar(255),
+lastname varchar(255),
+workertype varchar(255),
+employeetitle varchar(255),
+i2_ioana varchar(255),
+curcostcenter varchar(255),
+finastraproduct varchar(255),
+country varchar(255),
+currency varchar(5),
+costoflabor varchar(255),
+totalcompensation money
+);

@@ -1,0 +1,11 @@
+CREATE VIEW dc_month AS
+SELECT product, SUM(agencyfees) AS dc_agencyfees, SUM(directsellingcost) AS dc_sellingcost, SUM(other) AS dc_other, SUM(thirdpartyroyalties) AS dc_thirdpartyroyalties, 
+                  SUM(total) AS dc_total
+FROM     (SELECT m.system_name AS product, CASE WHEN d .tm1_description = 'AgencyFees' THEN mo1 ELSE 0 END AS agencyfees, 
+                                    CASE WHEN d .tm1_description = 'DirectSellingCost' THEN mo1 ELSE 0 END AS directsellingcost, 
+                                    CASE WHEN d .tm1_description = 'Other' THEN mo1 ELSE 0 END AS other, 
+                                    CASE WHEN d .tm1_description = 'ThirdPartyRoyalties' THEN mo1 ELSE 0 END AS thirdpartyroyalties, 
+                                    CASE WHEN d .tm1_description = 'Total' THEN mo1 ELSE 0 END AS total
+                  FROM      dbo.direct_costs AS d RIGHT OUTER JOIN
+                                    dbo.mapping AS m ON d.product = m.system_name) AS dc1
+GROUP BY product

@@ -1,0 +1,10 @@
+CREATE VIEW rv_month AS
+SELECT product, SUM(cloud) AS cloud_revenue, SUM(maintenance) AS maintenance_revenue, SUM(other) AS other_revenue, SUM(servicesrevenue) AS services_revenue, 
+                  SUM(subscription) AS subscription_revenue, SUM(total) AS total_revenue
+FROM     (SELECT m.system_name AS product, CASE WHEN r.tm1_description = 'Cloud' THEN mo1 ELSE 0 END AS cloud, 
+                                    CASE WHEN r.tm1_description = 'Maintenance' THEN mo1 ELSE 0 END AS maintenance, CASE WHEN r.tm1_description = 'Other' THEN mo1 ELSE 0 END AS other, 
+                                    CASE WHEN r.tm1_description = 'Services' THEN mo1 ELSE 0 END AS servicesrevenue, 
+                                    CASE WHEN r.tm1_description = 'Subscription' THEN mo1 ELSE 0 END AS subscription, CASE WHEN r.tm1_description = 'Total' THEN mo1 ELSE 0 END AS total
+                  FROM      dbo.revenue AS r RIGHT OUTER JOIN
+                                    dbo.mapping AS m ON r.product = m.system_name) AS rv1
+GROUP BY product
